@@ -1,4 +1,4 @@
-"""Disk-backed streaming merge for large Director IMAGE timelines."""
+"""大时间轴磁盘流式拼接。"""
 
 from __future__ import annotations
 
@@ -37,14 +37,14 @@ def _stream_root() -> Path:
 
 
 def stream_merge_required(frame_counts: list[int], shape: tuple[int, int, int]) -> bool:
-    """Return True when a full in-RAM concat would exceed the conservative limit."""
+    """预计完整内存拼接超过保守上限时返回 True。"""
     h, w, c = (int(shape[0]), int(shape[1]), int(shape[2]))
     frames = sum(max(0, int(n)) for n in frame_counts)
     return int(frames) * max(1, h) * max(1, w) * max(1, c) * 4 >= STREAM_MERGE_RAM_LIMIT
 
 
 class FrameBatchAccumulator:
-    """Append seam-processed batches to a raw file and expose a memmap tensor."""
+    """将完成接缝处理的批次追加到 raw 文件，并返回 memmap 张量。"""
 
     def __init__(self, plan: DirectorPlan, *, label: str, node_id: str | None = None):
         self._plan = plan
@@ -59,7 +59,7 @@ class FrameBatchAccumulator:
         self._file = self.path.open("wb", buffering=1024 * 1024)
 
     def push(self, batch: torch.Tensor, source_index: int) -> int | None:
-        """Add one source batch; return the source index flushed to disk, if any."""
+        """加入一个源批次；若有批次已写盘，则返回其源索引。"""
         if self._closed:
             raise RuntimeError("FrameBatchAccumulator is closed")
         if not isinstance(batch, torch.Tensor) or batch.ndim != 4:
@@ -80,7 +80,7 @@ class FrameBatchAccumulator:
         return flushed
 
     def finish(self) -> tuple[torch.Tensor, int]:
-        """Flush the final batch and return a read-only disk-backed IMAGE tensor."""
+        """写入最后一批，返回磁盘支持的只读 IMAGE 张量。"""
         if self._closed:
             raise RuntimeError("FrameBatchAccumulator is closed")
         if self._current is None or self._current_index is None:
@@ -167,7 +167,7 @@ def concat_continuous_chunks_to_disk(
     node_id: str | None = None,
     on_release: Callable[[int], None] | None = None,
 ) -> torch.Tensor:
-    """Merge chunks using the existing seam logic while releasing sources early."""
+    """沿用原接缝逻辑合并批次，并在写盘后尽早释放源数据。"""
     del segments
     if not chunks:
         raise ValueError("concat_continuous_chunks_to_disk: no chunks")

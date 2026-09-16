@@ -1759,6 +1759,7 @@ def join_continuous_pair(
     body: torch.Tensor,
     plan: DirectorPlan,
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """对相邻两段执行原有接缝处理。"""
     if not getattr(plan, 'continuity_enabled', False):
         return current, body
     left = _unfreeze_held_tail(current)

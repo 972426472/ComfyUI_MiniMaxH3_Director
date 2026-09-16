@@ -1661,9 +1661,9 @@ def execute_director_plan_core(
             )
         )
 
-        # A full 60s float32 IMAGE batch is ~17.5 GiB. Large runs use a
-        # temporary raw file so each segment can be released after its seam
-        # pass is written, instead of allocating a second full torch.cat().
+        # 60 秒完整 float32 IMAGE 批次约占 17.5 GiB。
+        # 大时间轴改用临时 raw 文件，每段完成接缝写入后即可释放。
+        # 这样可避免再次分配完整时间轴；小时间轴仍走原有内存拼接路径。
         first_shape = tuple(int(v) for v in export_chunks[0].shape[1:])
         same_frame_shape = all(
             tuple(int(v) for v in chunk.shape[1:]) == first_shape
@@ -1705,7 +1705,7 @@ def execute_director_plan_core(
             _release_streamed_index(index, pre=False)
             _release_streamed_index(index, pre=True)
 
-        # These working sets are no longer needed once frame exports are final.
+        # 帧导出完成后，这些工作集不再需要保留。
         completed_refine_passes.clear()
         completed_av_latents.clear()
         completed_first_pass_av.clear()
